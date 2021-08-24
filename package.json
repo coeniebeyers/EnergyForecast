@@ -1,0 +1,24 @@
+{
+  "name": "energyforecast",
+  "version": "1.0.0",
+  "description": "Forecasting available energy",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/coeniebeyers/EnergyForecast.git"
+  },
+  "author": "",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/coeniebeyers/EnergyForecast/issues"
+  },
+  "homepage": "https://github.com/coeniebeyers/EnergyForecast#readme",
+  "dependencies": {
+    "influx": "^5.9.2",
+    "node-fetch": "^2.6.1",
+    "nodeplotlib": "^0.7.5"
+  }
+}
