@@ -304,6 +304,42 @@ async function findPowerConsumptionScheduleForKey(key, forecastStart, forecastEn
   }
 }
 
+function calculateEnergyUntilTimestamp(forecast, fromTimestamp,  untilTimestamp){
+
+  // first find the index in the forecast where to start
+  let startIndex = 0
+  for(; startIndex < forecast.timeArray.length; startIndex++){
+    const timeCursor = new Date(forecast.timeArray[startIndex]).getTime()
+    if(timeCursor >= fromTimestamp){
+      // We need to subtract 1, however the Math.max ensures that the index doesn't go negative
+      startIndex = Math.max(startIndex-1, 0)
+      break
+    }
+  }
+  console.log({startIndex})
+
+  const fromDateMinutes = new Date(fromTimestamp).getMinutes()
+  // Since the forecast is the average power of the previous 30 minutes, we need to know 
+  // how many minutes is between the fromTimestsamp and the forecast value
+  const minutesLeftOf30 = fromDateMinutes > 30 ? 60 - fromDateMinutes : 30 - fromDateMinutes
+  console.log({minutesLeftOf30})
+
+  let timestamp = fromTimestamp
+  let valueSum = 0
+  for(let timeIndex = startIndex; timestamp <= untilTimestamp ; timeIndex++){
+    const powerAverage30Mins = forecast.valueArray[timeIndex]
+    let kwh = powerAverage30Mins*(30/60)
+    if(timeIndex == startIndex && minutesLeftOf30 != 0){
+      kwh = powerAverage30Mins*(minutesLeftOf30/60) 
+    }
+    valueSum += kwh
+    console.log('Energy: '+valueSum+' at '+new Date(timestamp))
+    timestamp = Date.parse(forecast.timeArray[timeIndex + 1])
+  }
+
+  return Number(valueSum.toFixed(4))
+}
+
 async function main(){
 
   const currentTimestamp = new Date().getTime()
@@ -320,16 +356,28 @@ async function main(){
     eastFileObj = JSON.parse(eastFileContents)
   }
 
-  if(!northFileObj || currentTimestamp >= northFileObj.timestamp + timeBetweenUpdates){
+  /*if(!northFileObj || currentTimestamp >= northFileObj.timestamp + timeBetweenUpdates){
     console.log('Updating solcast forcast')
     northFileObj = await updateFileDB(northPVForecastURL.href, northDbFilePath)
     eastFileObj = await updateFileDB(eastPVForecastURL.href, eastDbFilePath)
-  }
+  }*/
 
   const northPVPowerForecast = await forecastPVPowerProduction(northFileObj)
   const eastPVPowerForecast = await forecastPVPowerProduction(eastFileObj)
   const totalPVPowerForecast = addForecasts(northPVPowerForecast, eastPVPowerForecast)
+  console.log({totalPVPowerForecast})
 
+  //const now = new Date('2021-10-03T16:30:01.475Z')
+  const now = new Date()
+  console.log({now})
+  const endOfDayUTC = new Date(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()+1).getTime()
+  const kwhLeftToday = calculateEnergyUntilTimestamp(totalPVPowerForecast, now.getTime(), endOfDayUTC)
+  console.log({kwhLeftToday})
+  const endOfTomorrowUTC = new Date(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()+2).getTime()
+  const kwhTomorrow = calculateEnergyUntilTimestamp(totalPVPowerForecast, endOfDayUTC, endOfTomorrowUTC)
+  console.log({kwhTomorrow})
+
+/*
 const data = [
     {
       x: northPVPowerForecast.timeArray,
@@ -348,14 +396,9 @@ const data = [
       y: totalPVPowerForecast.valueArray,
       type: 'line',
       name: 'total'
-    },
-    /*{
-      x: totalPVPowerForecast.timeArray,
-      y: totalPVPowerForecast.sumArray,
-      type: 'line',
-      name: 'sum(total)'
-    }*/
+    }
   ]
+	*/
 
 /*
   const forecastStart = new Date(northPVPowerForecast.timeArray[0])
@@ -387,7 +430,7 @@ const data = [
   ];
 */
 
-  plot(data);
+  //plot(data);
   
 }
 
